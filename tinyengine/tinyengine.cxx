@@ -1,0 +1,572 @@
+extern "C" {
+    int _fltused = 0;
+}
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+typedef int i32;
+typedef short i16;
+typedef signed char i8;
+typedef unsigned u32;
+typedef unsigned short u16;
+typedef unsigned char u8;
+typedef float f32;
+typedef double f64;
+
+namespace w32 {
+
+#define K32(a, b) P32 = (void*)GetProcAddress(kernmod, b); a = (decltype(a))P32;
+#define U32(a, b) P32 = (void*)GetProcAddress(usermod, b); a = (decltype(a))P32;
+#define G32(a, b) P32 = (void*)GetProcAddress(gdimod, b); a = (decltype(a))P32;
+
+    int (*ChoosePixelFormat)(HDC, PPIXELFORMATDESCRIPTOR);
+    BOOL (*SetPixelFormat)(HDC, int, PPIXELFORMATDESCRIPTOR);
+    int (*DescribePixelFormat)(HDC, int, unsigned long long, PPIXELFORMATDESCRIPTOR);
+    BOOL (*SwapBuffers)(HDC);
+    HANDLE (*CreateFileA)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+    DWORD (*GetFileSize)(HANDLE, LPDWORD);
+    BOOL (*ReadFile)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+    DWORD (*SetFilePointer)(HANDLE, LONG, PLONG, DWORD);
+    BOOL(*TranslateMessage)(const MSG*);
+    BOOL(*DispatchMessageA)(const MSG*);
+    BOOL(*PeekMessageA)(LPMSG, HWND, UINT, UINT, UINT);
+    HMODULE(*GetModuleHandleA)(LPCSTR);
+    ATOM(*RegisterClassA)(const WNDCLASSA *);
+    HDC(*GetDC)(HWND);
+    HWND(*CreateWindowExA)(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID);
+
+
+    LRESULT(*DefWindowProcA)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+
+    BOOL(*ShowWindow)(HWND, int);
+    void loadWin32() {
+        static HMODULE kernmod, usermod, gdimod;
+        void* P32;
+        kernmod = LoadLibraryA("kernel32.dll");
+        usermod = LoadLibraryA("user32.dll");
+        gdimod = LoadLibraryA("gdi32.dll");
+
+        G32(ChoosePixelFormat, "ChoosePixelFormat");
+        G32(SetPixelFormat, "SetPixelFormat");
+        G32(DescribePixelFormat, "DescribePixelFormat");
+        G32(SwapBuffers, "SwapBuffers");
+        K32(CreateFileA, "CreateFileA");
+        K32(SetFilePointer, "SetFilePointer");
+        U32(TranslateMessage, "TranslateMessage");
+        U32(DispatchMessageA, "DispatchMessageA");
+        U32(PeekMessageA, "PeekMessageA");
+        U32(ShowWindow, "ShowWindow");
+        U32(DefWindowProcA, "DefWindowProcA");
+        K32(GetModuleHandleA, "GetModuleHandleA");
+        U32(RegisterClassA, "RegisterClassA");
+        U32(GetDC, "GetDC");
+        U32(CreateWindowExA, "CreateWindowExA");
+
+    }
+
+}
+
+namespace gl {
+
+    void (*viewport)(u32, u32, u32, u32);
+    void (*clear)(u32);
+    void (*clearColor)(f32, f32, f32, f32);
+
+    void (*genBuffers)(u32, u32*);
+    void (*bindBuffer)(u32, u32);
+    void (*bufferData)(u32, u32, const void*, u32);
+
+    void (*genVertexArrays)(u32, u32*);
+    void (*bindVertexArray)(u32);
+    void (*enableVertexAttribArray)(u32);
+    void (*vertexAttribPointer)(u32, i32, u32, bool, u32, const void*);
+
+    void (*drawElements)(u32, u32, u32, const void*);
+
+    void (*genTextures)(u32, u32*);
+    void (*bindTexture)(u32, u32);
+    void (*texParameteri)(u32, u32, i32);
+    void (*texImage2D)(u32, i32, i32, u32, u32, i32, u32, u32, const void*);
+    void (*generateMipmap)(u32);
+
+
+    u32(*createShader)(u32);
+    u32(*shaderSource)(u32, u32, const char**, const i32*);
+    u32(*compileShader)(u32);
+
+    u32(*createProgram)();
+    u32(*attachShader)(u32, u32);
+    u32(*linkProgram)(u32);
+    void (*useProgram)(u32);
+
+    i32(*getUniformLocation)(u32, const char*);
+    void (*uniformMatrix4fv)(i32, i32, bool, float*);
+    void (*uniform1i)(i32, i32);
+
+    long long (*wGetProcAddress)(const char*);
+    HGLRC(*wCreateContext)(HDC);
+    BOOL(*wMakeCurrent)(HDC, HGLRC);
+
+    void (*genFramebuffers)(u32, u32*);
+    void (*bindFramebuffer)(u32, u32);
+    void (*framebufferTexture2D)(u32, u32, u32, u32, i32);
+
+    HMODULE glmod;
+    void* loadFunc(const char* name) {
+        void* p = (void*)wGetProcAddress(name);
+        if (p == 0 ||
+            p == (void*)0x1 ||
+            p == (void*)0x2 ||
+            p == (void*)0x3 ||
+            p == (void*)-1) {
+            p = (void*)GetProcAddress(glmod, name);
+        }
+        return p;
+    }
+
+#define GL_LOADFUNC(a, b) a = (decltype(a))loadFunc(b)
+
+    void preinit() {
+        glmod = LoadLibraryA("opengl32.dll");
+        void* p = (void*)GetProcAddress(glmod, "wglGetProcAddress");
+        wGetProcAddress = (decltype(wGetProcAddress))p;
+
+        p = (void*)GetProcAddress(glmod, "wglCreateContext");
+        wCreateContext = (decltype(wCreateContext))p;
+
+        p = (void*)GetProcAddress(glmod, "wglMakeCurrent");
+        wMakeCurrent = (decltype(wMakeCurrent))p;
+    }
+
+    void init() {
+        GL_LOADFUNC(viewport, "glViewport");
+        GL_LOADFUNC(clear, "glClear");
+        GL_LOADFUNC(clearColor, "glClearColor");
+        GL_LOADFUNC(createShader, "glCreateShader");
+        GL_LOADFUNC(shaderSource, "glShaderSource");
+        GL_LOADFUNC(compileShader, "glCompileShader");
+
+        GL_LOADFUNC(createProgram, "glCreateProgram");
+        GL_LOADFUNC(attachShader, "glAttachShader");
+        GL_LOADFUNC(linkProgram, "glLinkProgram");
+        GL_LOADFUNC(useProgram, "glUseProgram");
+
+        GL_LOADFUNC(genBuffers, "glGenBuffers");
+        GL_LOADFUNC(bindBuffer, "glBindBuffer");
+        GL_LOADFUNC(bufferData, "glBufferData");
+
+        GL_LOADFUNC(genVertexArrays, "glGenVertexArrays");
+        GL_LOADFUNC(bindVertexArray, "glBindVertexArray");
+        GL_LOADFUNC(vertexAttribPointer, "glVertexAttribPointer");
+        GL_LOADFUNC(enableVertexAttribArray, "glEnableVertexAttribArray");
+
+        GL_LOADFUNC(drawElements, "glDrawElements");
+
+        GL_LOADFUNC(getUniformLocation, "glGetUniformLocation");
+        GL_LOADFUNC(uniformMatrix4fv, "glUniformMatrix4fv");
+        GL_LOADFUNC(uniform1i, "glUniform1i");
+
+        GL_LOADFUNC(genTextures, "glGenTextures");
+        GL_LOADFUNC(bindTexture, "glBindTexture");
+        GL_LOADFUNC(texParameteri, "glTexParameteri");
+        GL_LOADFUNC(texImage2D, "glTexImage2D");
+        GL_LOADFUNC(generateMipmap, "glGenerateMipmap");
+
+        GL_LOADFUNC(genFramebuffers, "glGenFramebuffers");
+        GL_LOADFUNC(bindFramebuffer, "glBindFramebuffer");
+        GL_LOADFUNC(framebufferTexture2D, "glFramebufferTexture2D");
+    }
+};
+
+template <typename T, unsigned long long size>
+struct Array {
+    T data[size];
+    T& operator[] (size_t i) {
+        return data[i];
+    }
+};
+
+struct ShaderProgram {
+    void init(const char* vsrc, const char* fsrc) {
+        id = gl::createProgram();
+        u32 vid = loadShader(vsrc, 0x8B31);
+        u32 fid = loadShader(fsrc, 0x8B30);
+        gl::attachShader(id, vid);
+        gl::attachShader(id, fid);
+        gl::linkProgram(id);
+    }
+
+    void use() {
+        gl::useProgram(id);
+    }
+
+    static u32 loadShader(const char* src, u32 type) {
+        u32 i = gl::createShader(type);
+        gl::shaderSource(i, 1, &src, nullptr);
+        gl::compileShader(i);
+        return i;
+    }
+    u32 id;
+};
+
+u8* readFile(const char* path) {
+    HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    SetFilePointer(f, 0, NULL, FILE_BEGIN);
+    DWORD fsize = GetFileSize(f, 0);
+
+    u8* cont = new u8[fsize];
+
+    DWORD numRead;
+    
+    ReadFile(f, cont, fsize, &numRead, 0);
+
+    return cont;
+}
+
+struct Texture {
+    void init(const char* path) {
+        u8* cont = readFile(path);
+
+        u32 w = *(i32*)((cont + 0x12));
+        u32 h = *(i32*)((cont + 0x16));
+        u32 siz = *(i32*)((cont + 0x22)); if (!siz) siz = w * h * 3;
+        u32 dpos = *(i32*)((cont + 0x0a)); if (!dpos) dpos = 54;
+
+        u8* data = cont + dpos;
+
+        gl::genTextures(1, &id);
+        gl::bindTexture(0x0de1, id);
+
+        gl::texImage2D(0x0de1, 0, 0x80e1, w, h, 0, 0x80e1, 0x1401, data);
+
+        gl::texParameteri(0x0de1, 0x2802, 0x8370); //el problemo
+        gl::texParameteri(0x0de1, 0x2803, 0x8370);// biEn?
+        gl::texParameteri(0x0de1, 0x2800, 0x2600);
+        gl::texParameteri(0x0de1, 0x2801, 0x2701);
+
+        gl::generateMipmap(0x0de1);
+
+        operator delete (cont);
+    }
+
+    void use(ShaderProgram& sh) const {
+        gl::bindTexture(0x0de1, id);
+        // gl::uniform1i(gl::getUniformLocation(sh.id, "stex"), id);
+    }
+    u32 id;
+};
+
+struct Mesh {
+
+    template <size_t NV, size_t NI>
+    void init(const Array<float, NV>& verts, const Array<unsigned, NI>& inds, const Array<float, NV * 3 / 2>& texcs) {
+        i_ct = static_cast<u32>(NI);
+        gl::genVertexArrays(1, &vao);
+        gl::bindVertexArray(vao);
+        gl::genBuffers(1, &vbo);
+        gl::genBuffers(1, &ebo);
+        gl::genBuffers(1, &tbo);
+        gl::bindBuffer(0x8892, vbo);
+        gl::bufferData(0x8892, sizeof(verts), &(verts.data[0]), 0x88e4);
+
+        gl::enableVertexAttribArray(0);
+        gl::vertexAttribPointer(0, 3, 0x1406, false, sizeof(float) * 3, (void*)0);
+
+        gl::bindBuffer(0x8892, tbo);
+        gl::bufferData(0x8892, sizeof(texcs), &(texcs.data[0]), 0x88e4);
+
+        gl::enableVertexAttribArray(1);
+        gl::vertexAttribPointer(1, 2, 0x1406, false, sizeof(float) * 2, (void*)0);
+
+        gl::bindBuffer(0x8893, ebo);
+        gl::bufferData(0x8893, sizeof(inds), &(inds.data[0]), 0x88e4);
+
+
+    }
+
+    void draw(const ShaderProgram&) {
+        gl::drawElements(0x0004, i_ct, 0x1405, 0);
+    }
+
+    u32 vao, vbo, ebo, tbo;
+    u32 i_ct;
+};
+
+static Mesh THEQUAD;
+
+struct Sprite {
+    void init() {
+
+    }
+    void draw(const ShaderProgram& shader_program) {
+
+        THEQUAD.draw(shader_program);
+    }
+    Array<float, 2> position;
+    float mat[16];
+};
+
+struct Surface {
+
+    void init(int _width = 480, int _height = 480) {
+        this->width = _width;
+        this->height = _height;
+    }
+
+    int width, height;
+};
+
+struct Window {
+    void init(const char title[] = "Tiny Engine", int _width = 480, int _height = 480) {
+        this->width = _width;
+        this->height = _height;
+        active = this;
+        should_close = false;
+        HINSTANCE inst = w32::GetModuleHandleA(0);
+        wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+        wc.lpfnWndProc = procedure;
+        wc.hInstance = inst;
+        wc.lpszClassName = title;
+        w32::RegisterClassA(&wc);
+        
+        h = w32::CreateWindowExA(
+            0,
+            title,
+            title,
+            WS_OVERLAPPEDWINDOW | WS_EX_COMPOSITED,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            width, height,
+            NULL,
+            NULL,
+            inst,
+            NULL
+        );
+
+        PIXELFORMATDESCRIPTOR ppfd;
+        ppfd = {
+            .nSize = sizeof(ppfd),
+            .nVersion = 1,
+            .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+            .iPixelType = PFD_TYPE_RGBA,
+            .cColorBits = 24,
+            .cAlphaBits = 8,
+            .cDepthBits = 24,
+            .cStencilBits = 8,
+            .iLayerType = PFD_MAIN_PLANE
+        };
+
+        hdc = w32::GetDC(h);
+        int format = w32::ChoosePixelFormat(hdc, &ppfd);
+
+        w32::SetPixelFormat(hdc, format, &ppfd);
+        w32::DescribePixelFormat(hdc, format, sizeof(PIXELFORMATDESCRIPTOR), &ppfd);
+
+
+    }
+
+    void makeContextCurrent() {
+        hglrc = gl::wCreateContext(hdc);
+        gl::wMakeCurrent(hdc, hglrc);
+        w32::ShowWindow(h, SW_SHOW);
+    }
+
+    WNDCLASSA wc;
+    HWND h;
+    HDC hdc;
+    HGLRC hglrc;
+
+    static LRESULT procedure(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+        switch (Msg) {
+        case WM_KEYDOWN:
+            if (active->onKeyDown != nullptr) {
+                active->onKeyDown(static_cast<int>(wParam));
+            }
+            return 0;
+        case WM_KEYUP:
+            if (active->onKeyUp != nullptr) {
+                active->onKeyUp(static_cast<int>(wParam));
+            }
+            return 0;
+        case WM_CLOSE:
+            active->should_close = true;
+            return 0;
+        }
+        return w32::DefWindowProcA(hWnd, Msg, wParam, lParam);
+    }
+
+    void (*onKeyDown)(int code) = nullptr;
+    void (*onKeyUp)(int code) = nullptr;
+
+    int width, height;
+    bool should_close;
+
+    void update() {
+        static MSG msg;
+        //
+        if (w32::PeekMessageA(&msg, h, 0, 0, PM_REMOVE)) {
+            w32::TranslateMessage(&msg);
+            w32::DispatchMessageA(&msg);
+        }
+        w32::SwapBuffers(hdc);
+    }
+
+    inline static Window* active;
+};
+
+
+
+struct Game {
+    Window window;
+
+    int run() {
+
+        window.init("Tiny Game", 480, 360);
+        gl::preinit();
+        window.makeContextCurrent();
+        gl::init();
+
+        window.onKeyDown = [](int) {
+
+            };
+        window.onKeyUp = [](int) {
+
+            };
+
+        gl::viewport(0, 0, 480, 360);
+        gl::clearColor(0.2f, 0.4f, 0.5f, 1.0f);
+
+        THEQUAD.init<12, 6>(
+            {
+                -1.0f, -1.0f, 0.0f,
+                -1.0f, 1.0f, 0.0f,
+                1.0f, 1.0f, 0.0f,
+                1.0f, -1.0f, 0.0f,
+            },
+            {
+                0, 1, 2,
+                0, 2, 3,
+            },
+            {
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f,
+            }
+            );
+
+        Sprite triangle;
+        triangle.init();
+
+        const char* vsrc = "\
+        layout (location = 0) in vec3 a_pos;\
+        layout (location = 1) in vec2 a_tex;\
+        uniform mat4 projection;\
+        out vec2 texcs;\
+        void main() {\
+            gl_Position = projection * vec4(a_pos, 1.0);\
+            texcs = a_tex;\
+        }";
+        const char* fsrc = "\
+        uniform sampler2D stex;\
+        in vec2 texcs;\
+        void main() {\
+            gl_FragColor = texture(stex, texcs);\
+        }";
+        ShaderProgram sh;
+        sh.init(vsrc, fsrc);
+
+        Texture testt;
+        testt.init("../pixil-frame-0.bmp");
+
+        float projection_matrix[] = {
+            100 / 480.0f, 0, 0, 0,
+            0, 100 / 360.0f, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        };
+
+        float fb_projection_matrix[] = {
+            1,0,0,0,
+            0,1,0,0,
+            0,0,1,0,
+            0,0,0,1,
+        };
+
+
+
+        u32 fbo;
+        gl::genFramebuffers(1, &fbo);
+        gl::bindFramebuffer(0x8d40, fbo);
+
+        Texture fbt;
+        gl::genTextures(1, &(fbt.id));
+        gl::bindTexture(0xde1, fbt.id);
+        gl::texImage2D(0xde1, 0, 0x1907, 480, 360, 0, 0x1907, 0x1401, NULL);
+
+        gl::texParameteri(0xde1, 0x2801, 0x2601);
+        gl::texParameteri(0xde1, 0x2800, 0x2601);
+
+
+        gl::framebufferTexture2D(0x8d40, 0x8ce0, 0xde1, fbt.id, 0);
+
+        gl::bindFramebuffer(0x8d40, 0);
+
+        while (!window.should_close) {
+            gl::clear(0x00004000);
+            sh.use();
+            testt.use(sh);
+            gl::bindFramebuffer(0x8d40, fbo);
+            gl::uniformMatrix4fv(gl::getUniformLocation(sh.id, "projection"), 1, false, &projection_matrix[0]);
+
+            triangle.draw(sh);
+
+            gl::bindTexture(0xde1, fbt.id);
+            gl::bindFramebuffer(0x8d40, 0);
+            gl::uniformMatrix4fv(gl::getUniformLocation(sh.id, "projection"), 1, false, &fb_projection_matrix[0]);
+            THEQUAD.draw(sh);
+            window.update();
+        }
+        return 0;
+    }
+
+};
+void* operator new (unsigned long long size) {
+    return HeapAlloc(
+        GetProcessHeap(),
+        0,
+        size
+    );
+}
+
+void* operator new[](unsigned long long size) {
+    return HeapAlloc(
+        GetProcessHeap(),
+        0,
+        size
+    );
+}
+
+void operator delete(void* ob) {
+    HeapFree(
+        GetProcessHeap(),
+        0,
+        ob
+    );
+}
+
+void operator delete(void* ob, unsigned long long size) {
+    HeapFree(
+        GetProcessHeap(),
+        0,
+        ob
+    );
+}
+
+
+extern "C" void WinMainCRTStartup() {
+//extern "C" void mainCRTStartup() {
+    w32::loadWin32();
+    Game* game = new Game();
+    int ret = game->run();
+    ExitProcess(ret);
+}
