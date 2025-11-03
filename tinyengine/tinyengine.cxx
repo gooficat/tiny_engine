@@ -1,8 +1,16 @@
 extern "C" {
     int _fltused = 0;
+
+    void __std_terminate() {
+
+    }
+
+    void __CxxFrameHandler4() {
+
+    }
 }
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+//#define WIN32_LEAN_AND_MEAN
+//#include <windows.h>
 
 typedef int i32;
 typedef short i16;
@@ -12,6 +20,193 @@ typedef unsigned short u16;
 typedef unsigned char u8;
 typedef float f32;
 typedef double f64;
+
+
+using WORD = unsigned;
+using DWORD = unsigned long;
+using BYTE = unsigned char;
+
+typedef struct tagPIXELFORMATDESCRIPTOR {
+    WORD  nSize;
+    WORD  nVersion;
+    DWORD dwFlags;
+    BYTE  iPixelType;
+    BYTE  cColorBits;
+    BYTE  cRedBits;
+    BYTE  cRedShift;
+    BYTE  cGreenBits;
+    BYTE  cGreenShift;
+    BYTE  cBlueBits;
+    BYTE  cBlueShift;
+    BYTE  cAlphaBits;
+    BYTE  cAlphaShift;
+    BYTE  cAccumBits;
+    BYTE  cAccumRedBits;
+    BYTE  cAccumGreenBits;
+    BYTE  cAccumBlueBits;
+    BYTE  cAccumAlphaBits;
+    BYTE  cDepthBits;
+    BYTE  cStencilBits;
+    BYTE  cAuxBuffers;
+    BYTE  iLayerType;
+    BYTE  bReserved;
+    DWORD dwLayerMask;
+    DWORD dwVisibleMask;
+    DWORD dwDamageMask;
+} PIXELFORMATDESCRIPTOR, *PPIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
+
+using HANDLE = void*;
+using HINSTANCE = HANDLE;
+using HMODULE = HANDLE;
+using HDC = HANDLE;
+using BOOL = BYTE;
+using LPCSTR = const char*;
+using LPDWORD = DWORD*;
+using VOID = void;
+using LPVOID = void*;
+using LONG = long;
+using PLONG = long*;
+using HWND = HANDLE;
+
+using HINSTANCE = HANDLE;
+using ATOM = WORD;
+
+using ULONG_PTR = unsigned long*;
+using PVOID = void*;
+using LPARAM = long;
+
+typedef struct _OVERLAPPED {
+    ULONG_PTR Internal;
+    ULONG_PTR InternalHigh;
+    union {
+        struct {
+            DWORD Offset;
+            DWORD OffsetHigh;
+        } DUMMYSTRUCTNAME;
+        PVOID Pointer;
+    } DUMMYUNIONNAME;
+    HANDLE    hEvent;
+} OVERLAPPED, * LPOVERLAPPED;
+
+typedef struct _SECURITY_ATTRIBUTES {
+    DWORD  nLength;
+    LPVOID lpSecurityDescriptor;
+    BOOL   bInheritHandle;
+} SECURITY_ATTRIBUTES, * PSECURITY_ATTRIBUTES, * LPSECURITY_ATTRIBUTES;
+
+using UINT = unsigned;
+
+typedef struct tagPOINT {
+    LONG x;
+    LONG y;
+} POINT, * PPOINT, * NPPOINT, * LPPOINT;
+
+using LPARAM = long;
+using WPARAM = unsigned;
+using LRESULT = long;
+
+typedef struct tagMSG {
+    HWND   hwnd;
+    UINT   message;
+    WPARAM wParam;
+    LPARAM lParam;
+    DWORD  time;
+    POINT  pt;
+    DWORD  lPrivate;
+} MSG, * PMSG, * NPMSG, * LPMSG;
+
+using HICON = void*;
+using HCURSOR = void*;
+using HBRUSH = void*;
+using WNDPROC = LRESULT(*)(HWND, UINT, WPARAM, LPARAM);
+using HMENU = void*;
+using HGLRC = void*;
+
+//typedef LRESULT (WNDPROC)(HWND, UINT, WPARAM, LPARAM);
+
+
+HMODULE (*LoadLibraryA)(LPCSTR) = 0;
+using FARPROC = void*;
+FARPROC(*GetProcAddress)(HMODULE, LPCSTR) = 0;
+
+using SIZE_T = unsigned long;
+
+typedef struct tagWNDCLASSA {
+    UINT      style;
+    WNDPROC   lpfnWndProc;
+    int       cbClsExtra;
+    int       cbWndExtra;
+    HINSTANCE hInstance;
+    HICON     hIcon;
+    HCURSOR   hCursor;
+    HBRUSH    hbrBackground;
+    LPCSTR    lpszMenuName;
+    LPCSTR    lpszClassName;
+} WNDCLASSA, * PWNDCLASSA, * NPWNDCLASSA, * LPWNDCLASSA;
+
+using ul = unsigned long;
+
+void getLoadLibraryA() {
+    ul* peb;
+    __asm {
+
+xor ebx, ebx
+
+mov edi, fs:[0x30]
+mov edi, [edi + 0x0c]
+mov edi, [edi + 0x1c]
+
+module_loop:
+mov eax, [edi + 0x08]
+    mov esi, [edi + 0x20]
+    mov edi, [edi]
+    cmp byte ptr [esi + 12], '3'
+jne module_loop
+
+mov edi, eax
+add edi, [eax + 0x3c]
+
+mov edx, [edi + 0x78]
+add edx, eax
+
+mov edi, [edx + 0x20]
+add edi, eax
+
+mov ebp, ebx
+name_loop :
+mov esi, [edi + ebp * 4]
+add esi, eax
+inc ebp
+cmp dword ptr [esi], 0x50746547
+jne name_loop
+cmp dword ptr[esi + 8], 0x65726464
+jne name_loop
+
+mov edi, [edx + 0x24]
+add edi, eax
+mov bp, [edi + ebp * 2]
+
+mov edi, [edx + 0x1C]
+add edi, eax
+mov edi, [edi + (ebp - 1) * 4]
+add edi, eax
+
+push 0x00000000
+push 0x41797261
+push 0x7262694C
+push 0x64616F4C
+push esp
+
+push eax
+xchg eax, esi
+call edi
+
+mov edi, [GetProcAddress]
+mov eax, [LoadLibraryA]
+
+    }
+
+}
 
 namespace w32 {
 
@@ -35,11 +230,20 @@ namespace w32 {
     HDC(*GetDC)(HWND);
     HWND(*CreateWindowExA)(DWORD, LPCSTR, LPCSTR, DWORD, int, int, int, int, HWND, HMENU, HINSTANCE, LPVOID);
 
+    LPVOID(*HeapAlloc)(HANDLE, DWORD, SIZE_T);
+    BOOL(*HeapFree)(HANDLE, DWORD, LPVOID);
+    HANDLE(*GetProcessHeap)();
+    VOID(*ExitProcess)(UINT);
 
     LRESULT(*DefWindowProcA)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
+
     BOOL(*ShowWindow)(HWND, int);
+
     void loadWin32() {
+        getLoadLibraryA();
+
+
         static HMODULE kernmod, usermod, gdimod;
         void* P32;
         kernmod = LoadLibraryA("kernel32.dll");
@@ -61,6 +265,11 @@ namespace w32 {
         U32(RegisterClassA, "RegisterClassA");
         U32(GetDC, "GetDC");
         U32(CreateWindowExA, "CreateWindowExA");
+
+        K32(HeapAlloc, "HeapAlloc");
+        K32(HeapFree, "HeapFree");
+        K32(GetProcessHeap, "GetProcessHeap");
+        K32(ExitProcess, "ExitProcess");
 
     }
 
@@ -210,15 +419,15 @@ struct ShaderProgram {
 };
 
 u8* readFile(const char* path) {
-    HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    SetFilePointer(f, 0, NULL, FILE_BEGIN);
-    DWORD fsize = GetFileSize(f, 0);
+    HANDLE f = w32::CreateFileA(path, 0x80000000L, 0x00000001, 0, 4, 0x00000080, 0);
+    w32::SetFilePointer(f, 0, 0, 0);
+    DWORD fsize = w32::GetFileSize(f, 0);
 
     u8* cont = new u8[fsize];
 
     DWORD numRead;
     
-    ReadFile(f, cont, fsize, &numRead, 0);
+    w32::ReadFile(f, cont, fsize, &numRead, 0);
 
     return cont;
 }
@@ -323,36 +532,36 @@ struct Window {
         active = this;
         should_close = false;
         HINSTANCE inst = w32::GetModuleHandleA(0);
-        wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+        wc.style = 0x0002 | 0x0001 | 0x0020;
         wc.lpfnWndProc = procedure;
         wc.hInstance = inst;
         wc.lpszClassName = title;
         w32::RegisterClassA(&wc);
-        
+
         h = w32::CreateWindowExA(
             0,
             title,
             title,
-            WS_OVERLAPPEDWINDOW | WS_EX_COMPOSITED,
-            CW_USEDEFAULT, CW_USEDEFAULT,
+            (0x00000000L | 0x00C00000L | 0x00080000L | 0x00040000L | 0x00020000L | 0x00010000L) | 0x02000000L,
+            ((int)0x80000000), ((int)0x80000000),
             width, height,
-            NULL,
-            NULL,
+            0,
+            0,
             inst,
-            NULL
+            0
         );
 
         PIXELFORMATDESCRIPTOR ppfd;
         ppfd = {
             .nSize = sizeof(ppfd),
             .nVersion = 1,
-            .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-            .iPixelType = PFD_TYPE_RGBA,
+            .dwFlags = 0x00000004 | 0x00000020 | 0x00000001,
+            .iPixelType = 0,
             .cColorBits = 24,
             .cAlphaBits = 8,
             .cDepthBits = 24,
             .cStencilBits = 8,
-            .iLayerType = PFD_MAIN_PLANE
+            .iLayerType = 0
         };
 
         hdc = w32::GetDC(h);
@@ -367,7 +576,7 @@ struct Window {
     void makeContextCurrent() {
         hglrc = gl::wCreateContext(hdc);
         gl::wMakeCurrent(hdc, hglrc);
-        w32::ShowWindow(h, SW_SHOW);
+        w32::ShowWindow(h, 5);
     }
 
     WNDCLASSA wc;
@@ -377,17 +586,17 @@ struct Window {
 
     static LRESULT procedure(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
         switch (Msg) {
-        case WM_KEYDOWN:
+        case 0x0100:
             if (active->onKeyDown != nullptr) {
                 active->onKeyDown(static_cast<int>(wParam));
             }
             return 0;
-        case WM_KEYUP:
+        case 0x0101:
             if (active->onKeyUp != nullptr) {
                 active->onKeyUp(static_cast<int>(wParam));
             }
             return 0;
-        case WM_CLOSE:
+        case 0x0010:
             active->should_close = true;
             return 0;
         }
@@ -403,7 +612,7 @@ struct Window {
     void update() {
         static MSG msg;
         //
-        if (w32::PeekMessageA(&msg, h, 0, 0, PM_REMOVE)) {
+        if (w32::PeekMessageA(&msg, h, 0, 0, 0x0001)) {
             w32::TranslateMessage(&msg);
             w32::DispatchMessageA(&msg);
         }
@@ -501,7 +710,7 @@ struct Game {
         Texture fbt;
         gl::genTextures(1, &(fbt.id));
         gl::bindTexture(0xde1, fbt.id);
-        gl::texImage2D(0xde1, 0, 0x1907, 480, 360, 0, 0x1907, 0x1401, NULL);
+        gl::texImage2D(0xde1, 0, 0x1907, 480, 360, 0, 0x1907, 0x1401, 0);
 
         gl::texParameteri(0xde1, 0x2801, 0x2601);
         gl::texParameteri(0xde1, 0x2800, 0x2601);
@@ -530,43 +739,64 @@ struct Game {
     }
 
 };
-void* operator new (unsigned long long size) {
-    return HeapAlloc(
-        GetProcessHeap(),
+
+static HANDLE PROCHEAP;
+
+void* operator new (unsigned int size) {
+    
+    return w32::HeapAlloc(
+        PROCHEAP,
         0,
         size
     );
 }
 
-void* operator new[](unsigned long long size) {
-    return HeapAlloc(
-        GetProcessHeap(),
+void* operator new[](unsigned int size) {
+    return w32::HeapAlloc(
+        PROCHEAP,
         0,
         size
     );
 }
 
 void operator delete(void* ob) {
-    HeapFree(
-        GetProcessHeap(),
+    w32::HeapFree(
+        PROCHEAP,
         0,
         ob
     );
 }
 
 void operator delete(void* ob, unsigned long long size) {
-    HeapFree(
-        GetProcessHeap(),
+    w32::HeapFree(
+        PROCHEAP,
         0,
         ob
     );
 }
 
 
-extern "C" void WinMainCRTStartup() {
-//extern "C" void mainCRTStartup() {
-    w32::loadWin32();
-    Game* game = new Game();
-    int ret = game->run();
-    ExitProcess(ret);
+
+//extern "C" void WinMainCRTStartup() {
+extern "C" {
+
+    void*  memset(void* b, int c, int len) {
+        int i;
+        unsigned char* p = (unsigned char*)b;
+        while (len > 0) {
+            *p = c;
+            p++;
+            len--;
+        }
+        return(b);
+    }
+
+    void mian() {
+        w32::loadWin32();
+        PROCHEAP = w32::GetProcessHeap();
+        Game* game = new Game();
+        int ret = game->run();
+        w32::ExitProcess(ret);
+    }
+
 }
