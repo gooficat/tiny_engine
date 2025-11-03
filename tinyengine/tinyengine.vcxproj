@@ -114,7 +114,8 @@
       </AdditionalIncludeDirectories>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <BasicRuntimeChecks />
-      <AssemblerOutput>AssemblyCode</AssemblerOutput>
+      <AssemblerOutput>All</AssemblerOutput>
+      <RuntimeLibrary />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +128,8 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <EntryPointSymbol>mian</EntryPointSymbol>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
+      <AssemblyDebug>false</AssemblyDebug>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

@@ -1,13 +1,13 @@
 extern "C" {
     int _fltused = 0;
 
-    void __std_terminate() {
+    //void __std_terminate() {
 
-    }
+    //}
 
-    void __CxxFrameHandler4() {
+    //void __CxxFrameHandler4() {
 
-    }
+    //}
 }
 //#define WIN32_LEAN_AND_MEAN
 //#include <windows.h>
@@ -22,7 +22,7 @@ typedef float f32;
 typedef double f64;
 
 
-using WORD = unsigned;
+using WORD = unsigned short;
 using DWORD = unsigned long;
 using BYTE = unsigned char;
 
@@ -68,12 +68,10 @@ using LONG = long;
 using PLONG = long*;
 using HWND = HANDLE;
 
-using HINSTANCE = HANDLE;
 using ATOM = WORD;
 
-using ULONG_PTR = unsigned long*;
+using ULONG_PTR = unsigned long;
 using PVOID = void*;
-using LPARAM = long;
 
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
@@ -125,9 +123,9 @@ using HGLRC = void*;
 //typedef LRESULT (WNDPROC)(HWND, UINT, WPARAM, LPARAM);
 
 
-HMODULE (*LoadLibraryA)(LPCSTR) = 0;
+HMODULE (__stdcall *LoadLibraryA)(LPCSTR) = 0;
 using FARPROC = void*;
-FARPROC(*GetProcAddress)(HMODULE, LPCSTR) = 0;
+FARPROC(__stdcall *GetProcAddress)(HMODULE, LPCSTR) = 0;
 
 using SIZE_T = unsigned long;
 
@@ -144,11 +142,165 @@ typedef struct tagWNDCLASSA {
     LPCSTR    lpszClassName;
 } WNDCLASSA, * PWNDCLASSA, * NPWNDCLASSA, * LPWNDCLASSA;
 
-using ul = unsigned long;
+
+typedef struct _IMAGE_DOS_HEADER {
+    WORD e_magic; // Magic number
+    WORD e_cblp; // Bytes on last page of file
+    WORD e_cp; // Pages in file
+    WORD e_crlc; // Relocations
+    WORD e_cparhdr; // Size of header in paragraphs
+    WORD e_minalloc; // Minimum extra paragraphs needed
+    WORD e_maxalloc; // Maximum extra paragraphs needed
+    WORD e_ss; // Initial (relative) SS value
+    WORD e_sp; // Initial SP value
+    WORD e_csum; // Checksum
+    WORD e_ip; // Initial IP value
+    WORD e_cs; // Initial (relative) CS value
+    WORD e_lfarlc; // File address of relocation table
+    WORD e_ovno; // Overlay number
+    WORD e_res[4]; // Reserved words
+    WORD e_oemid; // OEM identifier (for e_oeminfo)
+    WORD e_oeminfo; // OEM information; e_oemid specific
+    WORD e_res2[10]; // Reserved words
+    LONG e_lfanew; // File address of new exe header
+} IMAGE_DOS_HEADER, * PIMAGE_DOS_HEADER;
+
+
+using UINT32 = unsigned long;
+
+typedef struct _IMAGE_FILE_HEADER {
+    WORD  Machine;
+    WORD  NumberOfSections;
+    DWORD TimeDateStamp;
+    DWORD PointerToSymbolTable;
+    DWORD NumberOfSymbols;
+    WORD  SizeOfOptionalHeader;
+    WORD  Characteristics;
+} IMAGE_FILE_HEADER, * PIMAGE_FILE_HEADER;
+#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
+
+
+typedef struct _IMAGE_DATA_DIRECTORY {
+    DWORD VirtualAddress;
+    DWORD Size;
+} IMAGE_DATA_DIRECTORY, * PIMAGE_DATA_DIRECTORY;
+
+typedef struct _IMAGE_OPTIONAL_HEADER {
+    WORD                 Magic;
+    BYTE                 MajorLinkerVersion;
+    BYTE                 MinorLinkerVersion;
+    DWORD                SizeOfCode;
+    DWORD                SizeOfInitializedData;
+    DWORD                SizeOfUninitializedData;
+    DWORD                AddressOfEntryPoint;
+    DWORD                BaseOfCode;
+    DWORD                BaseOfData;
+    DWORD                ImageBase;
+    DWORD                SectionAlignment;
+    DWORD                FileAlignment;
+    WORD                 MajorOperatingSystemVersion;
+    WORD                 MinorOperatingSystemVersion;
+    WORD                 MajorImageVersion;
+    WORD                 MinorImageVersion;
+    WORD                 MajorSubsystemVersion;
+    WORD                 MinorSubsystemVersion;
+    DWORD                Win32VersionValue;
+    DWORD                SizeOfImage;
+    DWORD                SizeOfHeaders;
+    DWORD                CheckSum;
+    WORD                 Subsystem;
+    WORD                 DllCharacteristics;
+    DWORD                SizeOfStackReserve;
+    DWORD                SizeOfStackCommit;
+    DWORD                SizeOfHeapReserve;
+    DWORD                SizeOfHeapCommit;
+    DWORD                LoaderFlags;
+    DWORD                NumberOfRvaAndSizes;
+    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} IMAGE_OPTIONAL_HEADER, * PIMAGE_OPTIONAL_HEADER;
+
+typedef struct _IMAGE_NT_HEADERS {
+    DWORD Signature;
+    IMAGE_FILE_HEADER FileHeader;
+    IMAGE_OPTIONAL_HEADER OptionalHeader;
+} IMAGE_NT_HEADERS, * PIMAGE_NT_HEADERS;
+
+static HMODULE findModuleBase(void* ptr)
+{
+    ULONG_PTR addr = (ULONG_PTR)ptr;
+    addr &= ~0xffff;
+    const UINT32* mod = (const UINT32*)addr;
+    while (mod[0] != 0x00905a4d) // MZ.. header
+        mod -= 0x4000; // 0x10000/4
+    return ((HMODULE)mod);
+}
+
+#define REL_PTR(base, ofs) (((PBYTE)base) + ofs)
+
+typedef struct _IMAGE_EXPORT_DIRECTORY {
+    DWORD   Characteristics;
+    DWORD   TimeDateStamp;
+    WORD    MajorVersion;
+    WORD    MinorVersion;
+    DWORD   Name;
+    DWORD   Base;
+    DWORD   NumberOfFunctions;
+    DWORD   NumberOfNames;
+    DWORD   AddressOfFunctions;     // RVA to array of function RVAs
+    DWORD   AddressOfNames;         // RVA to array of name RVAs
+    DWORD   AddressOfNameOrdinals;  // RVA to array of WORD ordinals
+} IMAGE_EXPORT_DIRECTORY, * PIMAGE_EXPORT_DIRECTORY;
+
+
+#define IMAGE_DIRECTORY_ENTRY_EXPORT 0
+
+#define REL_PTR(base, offset) ((PVOID)((BYTE*)(base) + (DWORD)(offset)))
+
+
+using UINT8 = unsigned char;
+using UINT16 = unsigned short;
+
+static void* findGetProcAddress(HMODULE mod)
+{
+    PIMAGE_DOS_HEADER idh = (PIMAGE_DOS_HEADER)mod;
+    PIMAGE_NT_HEADERS inh = (PIMAGE_NT_HEADERS)REL_PTR(idh, idh->e_lfanew);
+    PIMAGE_EXPORT_DIRECTORY ied = (PIMAGE_EXPORT_DIRECTORY)REL_PTR(
+        idh,
+        inh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]
+        .VirtualAddress);
+    DWORD* names = (DWORD*)REL_PTR(idh, ied->AddressOfNames);
+    unsigned int i;
+    for (i = 0; i < ied->NumberOfNames; i++) {
+        const UINT32* name32 = (const UINT32*)REL_PTR(idh, names[i]);
+        const UINT16* name16 = (const UINT16*)name32;
+        const UINT8* name8 = (const UINT8*)name32;
+        if (name32[0] != 0x50746547 || // GetP
+            name32[1] != 0x41636f72 || // rocA
+            name32[2] != 0x65726464 || // ddre
+            name16[6] != 0x7373 || // ss
+            name8[14] != 0x00)
+            continue;
+        WORD* ordinals =
+            (WORD*)REL_PTR(idh, ied->AddressOfNameOrdinals);
+        DWORD* funcs = (DWORD*)REL_PTR(idh, ied->AddressOfFunctions);
+        return (REL_PTR(idh, funcs[ordinals[i]]));
+    }
+    return (0);
+}
+
+void* __cdecl _ReturnAddress() {
+    __asm {
+        mov eax, dword ptr ss:[ebp + 4]
+        ret
+    }
+}
+
+#define RETURN_ADDRESS() _ReturnAddress()
+
+
 
 void getLoadLibraryA() {
-    ul* peb;
-    __asm {
+    /*__asm {
 
 xor ebx, ebx
 
@@ -157,7 +309,7 @@ mov edi, [edi + 0x0c]
 mov edi, [edi + 0x1c]
 
 module_loop:
-mov eax, [edi + 0x08]
+mov eax, [edi + 0x18]
     mov esi, [edi + 0x20]
     mov edi, [edi]
     cmp byte ptr [esi + 12], '3'
@@ -191,6 +343,8 @@ add edi, eax
 mov edi, [edi + (ebp - 1) * 4]
 add edi, eax
 
+mov dword ptr[GetProcAddress], edi
+
 push 0x00000000
 push 0x41797261
 push 0x7262694C
@@ -201,11 +355,15 @@ push eax
 xchg eax, esi
 call edi
 
-mov edi, [GetProcAddress]
-mov eax, [LoadLibraryA]
+mov dword ptr [LoadLibraryA], eax
 
-    }
+    }*/
 
+    HMODULE kernel = findModuleBase(RETURN_ADDRESS());
+
+    GetProcAddress = (decltype(GetProcAddress))findGetProcAddress(kernel);
+
+    LoadLibraryA = (decltype(LoadLibraryA))GetProcAddress(kernel, "LoadLibraryA");
 }
 
 namespace w32 {
