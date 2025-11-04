@@ -12,7 +12,35 @@ extern "C" {
 //#define WIN32_LEAN_AND_MEAN
 //#include <windows.h>
 
-using size_t = unsigned long long;
+using size_t = unsigned int;
+using UINT32 = unsigned long;
+using UINT8 = unsigned char;
+using UINT16 = unsigned short;
+
+using WORD = unsigned short;
+using DWORD = unsigned long;
+using BYTE = unsigned char;
+using HANDLE = void*;
+using HINSTANCE = HANDLE;
+using HMODULE = HANDLE;
+using HDC = HANDLE;
+using BOOL = int;
+using LPCSTR = const char*;
+using LPDWORD = DWORD*;
+using VOID = void;
+using LPVOID = void*;
+using LONG = long;
+using PLONG = long*;
+using HWND = HANDLE;
+using PBYTE = BYTE*;
+
+using ATOM = WORD;
+
+using ULONG_PTR = unsigned long;
+using PVOID = void*;
+
+using FARPROC = void*;
+using SIZE_T = unsigned long;
 
 typedef int i32;
 typedef short i16;
@@ -22,11 +50,18 @@ typedef unsigned short u16;
 typedef unsigned char u8;
 typedef float f32;
 typedef double f64;
+using UINT = unsigned;
+using LPARAM = long;
+using WPARAM = unsigned;
+using LRESULT = long;
+using HICON = void*;
+using HCURSOR = void*;
+using HBRUSH = void*;
+using WNDPROC = LRESULT(*)(HWND, UINT, WPARAM, LPARAM);
+using HMENU = void*;
+using HGLRC = void*;
 
 
-using WORD = unsigned short;
-using DWORD = unsigned long;
-using BYTE = unsigned char;
 
 typedef struct tagPIXELFORMATDESCRIPTOR {
     WORD  nSize;
@@ -57,23 +92,6 @@ typedef struct tagPIXELFORMATDESCRIPTOR {
     DWORD dwDamageMask;
 } PIXELFORMATDESCRIPTOR, *PPIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
 
-using HANDLE = void*;
-using HINSTANCE = HANDLE;
-using HMODULE = HANDLE;
-using HDC = HANDLE;
-using BOOL = BYTE;
-using LPCSTR = const char*;
-using LPDWORD = DWORD*;
-using VOID = void;
-using LPVOID = void*;
-using LONG = long;
-using PLONG = long*;
-using HWND = HANDLE;
-
-using ATOM = WORD;
-
-using ULONG_PTR = unsigned long;
-using PVOID = void*;
 
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
@@ -94,16 +112,11 @@ typedef struct _SECURITY_ATTRIBUTES {
     BOOL   bInheritHandle;
 } SECURITY_ATTRIBUTES, * PSECURITY_ATTRIBUTES, * LPSECURITY_ATTRIBUTES;
 
-using UINT = unsigned;
 
 typedef struct tagPOINT {
     LONG x;
     LONG y;
 } POINT, * PPOINT, * NPPOINT, * LPPOINT;
-
-using LPARAM = long;
-using WPARAM = unsigned;
-using LRESULT = long;
 
 typedef struct tagMSG {
     HWND   hwnd;
@@ -115,21 +128,13 @@ typedef struct tagMSG {
     DWORD  lPrivate;
 } MSG, * PMSG, * NPMSG, * LPMSG;
 
-using HICON = void*;
-using HCURSOR = void*;
-using HBRUSH = void*;
-using WNDPROC = LRESULT(*)(HWND, UINT, WPARAM, LPARAM);
-using HMENU = void*;
-using HGLRC = void*;
-
 //typedef LRESULT (WNDPROC)(HWND, UINT, WPARAM, LPARAM);
 
 
 HMODULE (__stdcall *LoadLibraryA)(LPCSTR) = 0;
-using FARPROC = void*;
+
 FARPROC(__stdcall *GetProcAddress)(HMODULE, LPCSTR) = 0;
 
-using SIZE_T = unsigned long;
 
 typedef struct tagWNDCLASSA {
     UINT      style;
@@ -167,8 +172,6 @@ typedef struct _IMAGE_DOS_HEADER {
     LONG e_lfanew; // File address of new exe header
 } IMAGE_DOS_HEADER, * PIMAGE_DOS_HEADER;
 
-
-using UINT32 = unsigned long;
 
 typedef struct _IMAGE_FILE_HEADER {
     WORD  Machine;
@@ -240,7 +243,7 @@ typedef struct _IMAGE_EXPORT_DIRECTORY {
     DWORD   AddressOfNameOrdinals;  // RVA to array of WORD ordinals
 } IMAGE_EXPORT_DIRECTORY, * PIMAGE_EXPORT_DIRECTORY;
 
-using PBYTE = BYTE*;
+
 
 #define REL_PTR(base, ofs) (((PBYTE)base) + ofs)
 
@@ -248,8 +251,6 @@ using PBYTE = BYTE*;
 #define IMAGE_DIRECTORY_ENTRY_EXPORT 0
 
 
-using UINT8 = unsigned char;
-using UINT16 = unsigned short;
 extern "C" {
 
     static HMODULE findModuleBase(void* ptr)
@@ -297,15 +298,16 @@ static void* findGetProcAddress(HMODULE mod)
 //     //     mov eax, dword ptr ss:[ebp + 4]
 //     //     ret
 //     // }
+// // }
+// void* __cdecl ReturnAddress() {
+//     void* ret;
+//     __asm__ (
+//         "movl 4(%%ebp), %0"
+//         : "=r"(ret)
+//     );
+//     return ret;
 // }
-void* __cdecl ReturnAddress() {
-    void* ret;
-    __asm__ (
-        "movl 4(%%ebp), %0"
-        : "=r"(ret)
-    );
-    return ret;
-}
+#define ReturnAddress() (__builtin_return_address(0))
 
 //#define RETURN_ADDRESS() _ReturnAddress()
 
