@@ -1,0 +1,1 @@
+g++ -g -nostdlib -ffreestanding -mconsole -Os -mno-stack-arg-probe -Xlinker --stack=0x100000,0x100000 main.cpp
